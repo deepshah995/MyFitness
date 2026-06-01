@@ -12,7 +12,7 @@ COPY nginx.conf.template /etc/nginx/conf.d/default.conf.template
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 ENV API_BASE_URL=http://localhost:8080
-EXPOSE 80
+EXPOSE 8080
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
 

@@ -6,7 +6,11 @@ if [ -z "${API_BASE_URL:-}" ]; then
   API_BASE_URL="http://localhost:8080"
 fi
 
-sed "s#__API_BASE_URL__#${API_BASE_URL}#g" /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf
+PORT="${PORT:-8080}"
+
+sed -e "s#__API_BASE_URL__#${API_BASE_URL}#g" \
+    -e "s#__PORT__#${PORT}#g" \
+    /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf
 
 exec nginx -g "daemon off;"
 

@@ -50,7 +50,6 @@ jobs:
           if [ -z "$REGION" ]; then REGION="us-central1"; fi
           FRONTEND_ORIGIN="${{ secrets.FRONTEND_ORIGIN }}"
           if [ -z "$FRONTEND_ORIGIN" ]; then FRONTEND_ORIGIN="http://localhost:5173"; fi
-          CLOUD_RUN_SERVICE_ACCOUNT="${{ secrets.CLOUD_RUN_SERVICE_ACCOUNT }}"
           echo "Deploying backend to region: $REGION"
           gcloud config set run/region "$REGION"
 
@@ -63,10 +62,6 @@ jobs:
             --allow-unauthenticated
             --set-env-vars "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }},SPREADSHEET_ID=${{ secrets.SPREADSHEET_ID }},FRONTEND_ORIGIN=$FRONTEND_ORIGIN"
           )
-
-          if [ -n "$CLOUD_RUN_SERVICE_ACCOUNT" ]; then
-            CMD+=(--service-account "$CLOUD_RUN_SERVICE_ACCOUNT")
-          fi
 
           "${CMD[@]}"
 
