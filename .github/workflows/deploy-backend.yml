@@ -30,7 +30,7 @@ jobs:
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
-          username: deepshah995
+          username: ${{ secrets.DOCKERHUB_USERNAME || 'deepshah995' }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build & push backend image
@@ -45,12 +45,28 @@ jobs:
 
       - name: Deploy to Cloud Run
         run: |
-          gcloud run deploy "${{ env.IMAGE_NAME }}" \
-            --project "${{ secrets.GCP_PROJECT_ID }}" \
-            --image "${{ env.DOCKERHUB_IMAGE }}:${{ github.sha }}" \
-            --region "${{ secrets.GCP_REGION }}" \
-            --platform managed \
-            --allow-unauthenticated \
-            --service-account "50801762919-compute@developer.gserviceaccount.com" \
-            --set-env-vars "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }},SPREADSHEET_ID=${{ secrets.SPREADSHEET_ID }},FRONTEND_ORIGIN=${{ secrets.FRONTEND_ORIGIN }}"
+          set -euo pipefail
+          REGION="${{ secrets.GCP_REGION }}"
+          if [ -z "$REGION" ]; then REGION="us-central1"; fi
+          FRONTEND_ORIGIN="${{ secrets.FRONTEND_ORIGIN }}"
+          if [ -z "$FRONTEND_ORIGIN" ]; then FRONTEND_ORIGIN="http://localhost:5173"; fi
+          CLOUD_RUN_SERVICE_ACCOUNT="${{ secrets.CLOUD_RUN_SERVICE_ACCOUNT }}"
+          echo "Deploying backend to region: $REGION"
+          gcloud config set run/region "$REGION"
+
+          CMD=(
+            gcloud run deploy "${{ env.IMAGE_NAME }}"
+            --project "${{ secrets.GCP_PROJECT_ID }}"
+            --image "${{ env.DOCKERHUB_IMAGE }}:${{ github.sha }}"
+            --region "$REGION"
+            --platform managed
+            --allow-unauthenticated
+            --set-env-vars "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }},SPREADSHEET_ID=${{ secrets.SPREADSHEET_ID }},FRONTEND_ORIGIN=$FRONTEND_ORIGIN"
+          )
+
+          if [ -n "$CLOUD_RUN_SERVICE_ACCOUNT" ]; then
+            CMD+=(--service-account "$CLOUD_RUN_SERVICE_ACCOUNT")
+          fi
+
+          "${CMD[@]}"
 
