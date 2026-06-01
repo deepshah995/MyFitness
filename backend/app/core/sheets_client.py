@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from typing import Any, Dict, List, Optional, Tuple
 
+import google.auth
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
@@ -13,9 +14,14 @@ SHEETS_SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
 class SheetsClient:
     def __init__(self, settings: Settings):
-        creds = service_account.Credentials.from_service_account_info(
-            settings.service_account_info(), scopes=SHEETS_SCOPES
-        )
+        sa_info = settings.service_account_info()
+        if sa_info:
+            creds = service_account.Credentials.from_service_account_info(
+                sa_info, scopes=SHEETS_SCOPES
+            )
+        else:
+            # Fallback to Application Default Credentials (Cloud Run service account).
+            creds, _ = google.auth.default(scopes=SHEETS_SCOPES)
         self.service = build("sheets", "v4", credentials=creds, cache_discovery=False)
         self.spreadsheet_id = settings.spreadsheet_id
 

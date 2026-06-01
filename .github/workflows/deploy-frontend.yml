@@ -5,6 +5,7 @@ on:
 
 env:
   IMAGE_NAME: myfitness-frontend
+  DOCKERHUB_IMAGE: deepshah995/myfitness-frontend
 
 jobs:
   deploy:
@@ -20,9 +21,11 @@ jobs:
       - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Configure Docker for Artifact Registry
-        run: |
-          gcloud auth configure-docker "${{ secrets.GCP_REGION }}-docker.pkg.dev" --quiet
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME || 'deepshah995' }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build & push frontend image
         uses: docker/build-push-action@v6
@@ -30,14 +33,22 @@ jobs:
           context: ./frontend
           file: ./frontend/Dockerfile
           push: true
-          tags: ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.ARTIFACT_REPO }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          tags: |
+            ${{ env.DOCKERHUB_IMAGE }}:${{ github.sha }}
+            ${{ env.DOCKERHUB_IMAGE }}:latest
 
       - name: Deploy to Cloud Run
         run: |
+          REGION="${{ secrets.GCP_REGION }}"
+          if [ -z "$REGION" ]; then REGION="us-central1"; fi
+          API_BASE_URL="${{ secrets.BACKEND_API_URL }}"
+          if [ -z "$API_BASE_URL" ]; then API_BASE_URL="http://localhost:8080"; fi
+
           gcloud run deploy "${{ env.IMAGE_NAME }}" \
-            --image "${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.ARTIFACT_REPO }}/${{ env.IMAGE_NAME }}:${{ github.sha }}" \
-            --region "${{ secrets.GCP_REGION }}" \
+            --project "${{ secrets.GCP_PROJECT_ID }}" \
+            --image "${{ env.DOCKERHUB_IMAGE }}:${{ github.sha }}" \
+            --region "$REGION" \
             --platform managed \
             --allow-unauthenticated \
-            --set-env-vars "API_BASE_URL=${{ secrets.BACKEND_API_URL }}"
+            --set-env-vars "API_BASE_URL=$API_BASE_URL"
 

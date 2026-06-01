@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     # Sheets
     spreadsheet_id: str
     sheets_service_account_json_b64: str = Field(
+        default="",
         validation_alias=AliasChoices("GOOGLE_SHEETS_SERVICE_ACCOUNT_JSON", "SHEETS_SERVICE_ACCOUNT_JSON_B64")
     )
     sheets_tab_config: str = "config"
@@ -30,6 +31,8 @@ class Settings(BaseSettings):
     ai_apply_updates: bool = True
 
     def service_account_info(self) -> Dict[str, Any]:
+        if not self.sheets_service_account_json_b64:
+            return {}
         raw = base64.b64decode(self.sheets_service_account_json_b64).decode("utf-8")
         return json.loads(raw)
 

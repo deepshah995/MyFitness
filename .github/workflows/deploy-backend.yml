@@ -5,6 +5,7 @@ on:
 
 env:
   IMAGE_NAME: myfitness-backend
+  DOCKERHUB_IMAGE: deepshah995/myfitness-backend
 
 jobs:
   deploy:
@@ -23,9 +24,11 @@ jobs:
       - name: Setup gcloud
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Configure Docker for Artifact Registry
-        run: |
-          gcloud auth configure-docker "${{ secrets.GCP_REGION }}-docker.pkg.dev" --quiet
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME || 'deepshah995' }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build & push backend image
         uses: docker/build-push-action@v6
@@ -33,14 +36,31 @@ jobs:
           context: ./backend
           file: ./backend/Dockerfile
           push: true
-          tags: ${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.ARTIFACT_REPO }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          tags: |
+            ${{ env.DOCKERHUB_IMAGE }}:${{ github.sha }}
+            ${{ env.DOCKERHUB_IMAGE }}:latest
 
       - name: Deploy to Cloud Run
         run: |
-          gcloud run deploy "${{ env.IMAGE_NAME }}" \
-            --image "${{ secrets.GCP_REGION }}-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.ARTIFACT_REPO }}/${{ env.IMAGE_NAME }}:${{ github.sha }}" \
-            --region "${{ secrets.GCP_REGION }}" \
-            --platform managed \
-            --allow-unauthenticated \
-            --set-env-vars "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }},SPREADSHEET_ID=${{ secrets.SPREADSHEET_ID }},GOOGLE_SHEETS_SERVICE_ACCOUNT_JSON=${{ secrets.GOOGLE_SHEETS_SERVICE_ACCOUNT_JSON }},FRONTEND_ORIGIN=${{ secrets.FRONTEND_ORIGIN }}"
+          REGION="${{ secrets.GCP_REGION }}"
+          if [ -z "$REGION" ]; then REGION="us-central1"; fi
+          FRONTEND_ORIGIN="${{ secrets.FRONTEND_ORIGIN }}"
+          if [ -z "$FRONTEND_ORIGIN" ]; then FRONTEND_ORIGIN="http://localhost:5173"; fi
+          CLOUD_RUN_SERVICE_ACCOUNT="${{ secrets.CLOUD_RUN_SERVICE_ACCOUNT }}"
+
+          CMD=(
+            gcloud run deploy "${{ env.IMAGE_NAME }}"
+            --project "${{ secrets.GCP_PROJECT_ID }}"
+            --image "${{ env.DOCKERHUB_IMAGE }}:${{ github.sha }}"
+            --region "$REGION"
+            --platform managed
+            --allow-unauthenticated
+            --set-env-vars "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }},SPREADSHEET_ID=${{ secrets.SPREADSHEET_ID }},FRONTEND_ORIGIN=$FRONTEND_ORIGIN"
+          )
+
+          if [ -n "$CLOUD_RUN_SERVICE_ACCOUNT" ]; then
+            CMD+=(--service-account "$CLOUD_RUN_SERVICE_ACCOUNT")
+          fi
+
+          "${CMD[@]}"
 

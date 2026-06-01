@@ -1,6 +1,3 @@
-<<<<<<< HEAD
-# MyFitness
-=======
 # MyFitness AI Coach (FastAPI + React + Gemini + Google Sheets)
 
 This repo contains:
@@ -58,8 +55,17 @@ PY
 GitHub Actions workflows are under `.github/workflows/` to deploy both apps to GCP Cloud Run.
 Deployment assumes secrets are configured in your GitHub repo:
 - `GCP_SA_KEY` (service account key JSON for deploy)
+- `GCP_PROJECT_ID`
+- `GCP_REGION`
+- `CLOUD_RUN_SERVICE_ACCOUNT` (optional; if set, deploy uses this runtime service account)
+- `DOCKERHUB_TOKEN`
+- `DOCKERHUB_USERNAME` (optional; defaults to `deepshah995`)
 - `GEMINI_API_KEY`
-- `GOOGLE_SHEETS_SERVICE_ACCOUNT_JSON` (service account JSON for Sheets API)
 - `SPREADSHEET_ID`
+- `FRONTEND_ORIGIN` (backend env var for frontend URL)
+- `BACKEND_API_URL` (frontend env var for backend URL, e.g. Cloud Run backend URL)
 
->>>>>>> 57bbd2a (Initial commit)
+Sheets auth options:
+- Preferred on Cloud Run: backend uses Application Default Credentials (service account attached to Cloud Run service).
+- Optional local/dev override: set `GOOGLE_SHEETS_SERVICE_ACCOUNT_JSON` (base64 service account JSON) in env.
+
