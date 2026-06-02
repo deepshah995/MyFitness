@@ -601,12 +601,45 @@ button.chip:hover {
 }
 
 @media (max-width: 860px) {
+  .hero {
+    flex-direction: column;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+  
+  .connection-status-card {
+    margin-top: 0 !important;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .tab-row {
+    width: 100% !important;
+    overflow-x: auto;
+    white-space: nowrap;
+    flex-wrap: nowrap !important;
+    justify-content: flex-start !important;
+    border-radius: 14px !important;
+    padding: 8px !important;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .tab-row::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .pill {
+    padding: 8px 14px !important;
+    font-size: 0.82rem !important;
+    flex-shrink: 0;
+  }
 
   .grid.cols-2,
+  .grid.cols-3,
   .grid.cols-4,
   .chat-layout,
   .skeleton-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr !important;
   }
 
   .bubble.user,

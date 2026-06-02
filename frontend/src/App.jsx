@@ -4,12 +4,14 @@ import CoachChat from "./components/CoachChat.jsx";
 import LogForms from "./components/LogForms.jsx";
 import Dashboard from "./components/Dashboard.jsx";
 import HelpGuide from "./components/HelpGuide.jsx";
+import Blueprint from "./components/Blueprint.jsx";
 
 const tabs = [
   { id: "coach", label: "Coach", icon: "✦" },
   { id: "log", label: "Log", icon: "◆" },
-  { id: "dashboard", label: "Dashboard", icon: "▣" },
-  { id: "help", label: "Help & Guide", icon: "❖" },
+  { id: "blueprint", label: "Recomp Blueprint", icon: "❖" },
+  { id: "dashboard", label: "Sync Dashboard", icon: "▣" },
+  { id: "help", label: "Setup Guide", icon: "⚙" }
 ];
 
 export default function App() {
@@ -137,6 +139,10 @@ export default function App() {
             refetch={fetchStatus}
             onNavigateToHelp={() => setActive("help")}
           />
+        ) : null}
+
+        {active === "blueprint" ? (
+          <Blueprint />
         ) : null}
 
         {active === "help" ? (
