@@ -61,7 +61,7 @@ Your output MUST be valid JSON matching the schema you are given by the backend:
   - "headers" (array of column names in the same order as "values")
   - "values" (array of cell values as strings; lengths must match headers)
 
-If you decide no persistence is needed, return {"reply": "...", "writes": []}.
+If you decide no persistence is needed, return {{"reply": "...", "writes": []}}.
 Use concise but actionable guidance.
 Timezone reference (if needed): {timezone}
 """.strip()
