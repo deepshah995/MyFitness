@@ -60,16 +60,16 @@ export default function App() {
   return (
     <div className="app-shell">
       {/* Redesigned Header bar */}
-      <div className="header-bar">
-        <div className="hero-content">
-          <div className="hero-badges">
-            <span className="badge brand">AI Training System</span>
-            <span className="badge">GCP Cloud Run</span>
+      <div className="hero">
+        <div>
+          <div className="hero-badge">
+            <span style={{ marginRight: "10px" }}>✦ AI Training System</span>
+            <span>❖ GCP Cloud Run</span>
           </div>
           <h1>MyFitness AI Coach</h1>
-          <p>Track progress, log workouts, and get smart, personalized guidance for recomp, arms, and your 10K goal.</p>
+          <p style={{ marginTop: "10px" }}>Track progress, log workouts, and get smart, personalized guidance for recomp, arms, and your 10K goal.</p>
         </div>
-
+        
         {/* Live sync card */}
         <div className="connection-status-card">
           <div className={`status-indicator ${isConnected ? "active" : "warning"}`} />
@@ -85,15 +85,14 @@ export default function App() {
       </div>
 
       {/* Modern Tabs Navigation Navbar */}
-      <div className="tab-navbar">
-        <div className="nav-tabs">
+      <div className="tab-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", flexWrap: "wrap", gap: "10px" }}>
+        <div style={{ display: "flex", gap: "6px" }}>
           {tabs.map((t) => (
             <button
               key={t.id}
               type="button"
-              data-tab={t.id}
               onClick={() => setActive(t.id)}
-              className={`tab-btn ${active === t.id ? "active" : ""}`}
+              className={`pill ${active === t.id ? "active" : ""}`}
             >
               <span aria-hidden>{t.icon}</span>
               {t.label}
@@ -105,7 +104,7 @@ export default function App() {
           <button 
             type="button" 
             className="secondary" 
-            style={{ fontSize: "0.8rem", padding: "8px 16px" }}
+            style={{ fontSize: "0.8rem", padding: "8px 16px", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "999px", boxShadow: "none" }}
             onClick={() => setActive("help")}
           >
             ⚙ View Setup Guide
@@ -114,7 +113,7 @@ export default function App() {
       </div>
 
       {/* Main Premium Container Panel */}
-      <div className="premium-panel">
+      <div className="panel">
         {active === "coach" ? (
           <CoachChat 
             preloadedPrompt={preloadedPrompt} 
