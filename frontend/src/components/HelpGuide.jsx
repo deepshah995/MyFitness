@@ -108,8 +108,9 @@ const promptLibrary = [
 /* ─────────────── SUPPLEMENT REFERENCE ─────────────── */
 const supplements = [
   { name: "Vitamin D3", dose: "5000 IU", timing: "Morning with food", why: "Insulin sensitivity + testosterone + immunity", color: "#fbbf24" },
+  { name: "Berberine HCl", dose: "500 mg × 3/day", timing: "With each main meal", why: "Activates AMPK pathway · clinically matches Metformin for glucose control · key prediabetes protocol", color: "#34d399" },
   { name: "Omega-3 EPA/DHA", dose: "2000 mg", timing: "Morning with food", why: "Anti-inflammation + cardiovascular health + brain", color: "#67e8f9" },
-  { name: "Whey Protein Isolate", dose: "1.5 scoops (35g)", timing: "Post-workout (within 30 min)", why: "Anabolic window · muscle protein synthesis", color: "#34d399" },
+  { name: "Whey Protein Isolate", dose: "1.5 scoops (35g)", timing: "Post-workout (within 30 min)", why: "Anabolic window · muscle protein synthesis", color: "#f472b6" },
   { name: "Ashwagandha KSM-66", dose: "600 mg", timing: "Bedtime", why: "Cortisol suppression · prevents liver glucose dump · sleep quality", color: "#a78bfa" },
 ];
 

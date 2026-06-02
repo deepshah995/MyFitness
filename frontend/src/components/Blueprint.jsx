@@ -19,6 +19,7 @@ const WEEK = [
         items: [
           { name: "Vitamin D3", dose: "5000 IU", note: "Take with food · insulin sensitivity" },
           { name: "Omega-3 (EPA/DHA)", dose: "2000 mg", note: "Anti-inflammatory · heart health" },
+          { name: "Berberine HCl", dose: "500 mg", note: "Take with breakfast · activates AMPK · matches Metformin efficacy for glucose" },
           { name: "Water", dose: "500 ml", note: "Rehydrate immediately on waking" },
         ],
       },
@@ -31,6 +32,7 @@ const WEEK = [
           { name: "Sautéed Spinach", dose: "100g", note: "Fiber-first · low GI" },
           { name: "Greek Yogurt", dose: "150g full-fat", note: "Casein protein + probiotics" },
           { name: "Berries", dose: "80g mixed", note: "Low-GI antioxidants" },
+          { name: "💊 Berberine HCl", dose: "500 mg with this meal", note: "AMPK activation · lowers post-breakfast glucose spike" },
         ],
       },
       {
@@ -42,6 +44,7 @@ const WEEK = [
           { name: "Quinoa", dose: "80g dry weight", note: "Complete amino acid profile" },
           { name: "Broccoli + Bell Peppers", dose: "200g mix", note: "Fiber-first · eat these first" },
           { name: "Olive Oil", dose: "1 tbsp", note: "Healthy fat · slow gastric emptying" },
+          { name: "💊 Berberine HCl", dose: "500 mg with this meal", note: "Second daily dose · mid-day glucose regulation" },
         ],
       },
       {
@@ -73,6 +76,7 @@ const WEEK = [
           { name: "Lentils (Dal)", dose: "150g cooked", note: "High fiber · protein + carb combo" },
           { name: "Steamed Broccoli", dose: "150g", note: "Glucose clearance veggie" },
           { name: "Cottage Cheese", dose: "100g", note: "Casein bedtime protein" },
+          { name: "💊 Berberine HCl", dose: "500 mg with this meal", note: "Third daily dose · blunts post-dinner glucose spike" },
         ],
       },
       {
