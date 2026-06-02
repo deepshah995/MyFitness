@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { apiFetch } from "../api.js";
 
 const modes = [
-  { id: "general", label: "General Coach" },
-  { id: "training", label: "Training Coach" },
-  { id: "diet", label: "Nutritionist Coach" },
-  { id: "supplements", label: "Supplements Coach" },
-  { id: "journal", label: "Bio-log Coach" },
+  { id: "general", label: "General" },
+  { id: "training", label: "Training" },
+  { id: "diet", label: "Diet" },
+  { id: "supplements", label: "Supplements" },
+  { id: "journal", label: "Journal" },
 ];
 
 const suggestions = [
@@ -15,7 +15,7 @@ const suggestions = [
   "How should I fuel before tomorrow's run?",
 ];
 
-export default function CoachChat({ preloadedPrompt, clearPreloadedPrompt, sheetsConnected }) {
+export default function CoachChat() {
   const [question, setQuestion] = useState("");
   const [mode, setMode] = useState("general");
   const [applyUpdates, setApplyUpdates] = useState(true);
@@ -25,7 +25,7 @@ export default function CoachChat({ preloadedPrompt, clearPreloadedPrompt, sheet
 
   async function sendMessage(text) {
     const userMsg = text.trim();
-    if (!userMsg) return;
+    if (!userMsg || loading) return;
 
     setError("");
     setMessages((m) => [...m, { role: "user", content: userMsg }]);
@@ -44,7 +44,7 @@ export default function CoachChat({ preloadedPrompt, clearPreloadedPrompt, sheet
           content:
             data.reply +
             (data.applied_writes
-              ? `\n\n✓ Persisted ${data.applied_writes} structural database update(s) to Google Sheets`
+              ? `\n\n✓ Saved ${data.applied_writes} update(s) to Google Sheets`
               : ""),
         },
       ]);
@@ -57,73 +57,68 @@ export default function CoachChat({ preloadedPrompt, clearPreloadedPrompt, sheet
     }
   }
 
-  // Preloaded Prompt listener for cross-tab routing
-  useEffect(() => {
-    if (preloadedPrompt) {
-      sendMessage(preloadedPrompt);
-      clearPreloadedPrompt();
-    }
-  }, [preloadedPrompt]);
-
   async function onSend(e) {
     e.preventDefault();
-    if (loading) return;
     await sendMessage(question);
   }
 
   return (
-    <div className="chat-window">
-      <div>
-        <h2 className="panel-title">AI Fitness Coach</h2>
-        <p className="panel-subtitle">Ask for training adjustments, diet planning, or health analysis. persiting directly to sheets.</p>
+    <div>
+      <h2 className="title">AI Coach</h2>
+      <p className="muted">Ask for plan updates, meal tweaks, or training adjustments. Toggle Sheets sync to persist changes.</p>
+      <div className="controls">
+        <label className="control">
+          <span>Mode</span>
+          <select value={mode} onChange={(e) => setMode(e.target.value)}>
+            {modes.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.label}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="control inline">
+          <input
+            type="checkbox"
+            checked={applyUpdates}
+            onChange={(e) => setApplyUpdates(e.target.checked)}
+          />
+          <span>Save updates to Google Sheets</span>
+        </label>
       </div>
 
-      {/* Modernized chat selector controls */}
-      <div className="chat-controls">
-        <div className="chat-controls-left">
-          <label className="chat-select-wrapper">
-            <span>Focus Mode</span>
-            <select value={mode} onChange={(e) => setMode(e.target.value)}>
-              {modes.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.label}
-                </option>
-              ))}
-            </select>
-          </label>
+      <form onSubmit={onSend} className="chat-layout">
+        <textarea
+          value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+          rows={3}
+          placeholder="Ask your coach anything…"
+        />
+        <button disabled={loading} type="submit">
+          {loading ? "Thinking…" : "Send"}
+        </button>
+      </form>
 
-          <label className="checkbox-wrapper">
-            <input
-              type="checkbox"
-              checked={applyUpdates}
-              disabled={!sheetsConnected}
-              onChange={(e) => setApplyUpdates(e.target.checked)}
-            />
-            <span>
-              {sheetsConnected 
-                ? "Auto-persist changes to Google Sheets" 
-                : "Sheets disconnected (Read-only coaching)"
-              }
-            </span>
-          </label>
-        </div>
-      </div>
+      {error ? <div className="alert error">{error}</div> : null}
 
-      {/* Chat History bubble block */}
-      <div className="chat-history">
+      <div className="chat-log">
         {messages.length === 0 && !loading ? (
-          <div className="chat-welcome">
-            <strong>Welcome to your AI Gym & Health Lab</strong>
-            <p>Get immediate, scientific routines tailored to your metabolism and sheets logs.</p>
-            <div className="chips-row">
+          <div className="empty-chat">
+            <strong>Start a coaching session</strong>
+            <p>Get personalized training, nutrition, and recovery advice based on your goals.</p>
+            <div className="chips">
               {suggestions.map((s) => (
                 <button
                   key={s}
                   type="button"
                   className="chip"
-                  onClick={() => sendMessage(s)}
+                  onClick={() => {
+                    setQuestion(s);
+                    sendMessage(s);
+                  }}
                 >
-                  💡 {s}
+                  {s}
                 </button>
               ))}
             </div>
@@ -133,17 +128,17 @@ export default function CoachChat({ preloadedPrompt, clearPreloadedPrompt, sheet
         {messages.map((m, idx) => (
           <div
             key={idx}
-            className={`chat-bubble ${m.role === "user" ? "user" : "assistant"}${m.isError ? " error-bubble" : ""}`}
+            className={`bubble ${m.role === "user" ? "user" : "assistant"}${m.isError ? " error-bubble" : ""}`}
           >
-            <span className="chat-bubble-label">{m.role === "user" ? "You" : "Coach"}</span>
-            <span style={{ whiteSpace: "pre-wrap" }}>{m.content}</span>
+            <span className="label">{m.role === "user" ? "You" : "Coach"}</span>
+            {m.content}
           </div>
         ))}
 
         {loading ? (
-          <div className="chat-bubble assistant">
-            <span className="chat-bubble-label">Coach</span>
-            <div className="typing-dots" aria-label="Loading">
+          <div className="bubble assistant">
+            <span className="label">Coach</span>
+            <div className="typing" aria-label="Loading">
               <span />
               <span />
               <span />
@@ -151,27 +146,6 @@ export default function CoachChat({ preloadedPrompt, clearPreloadedPrompt, sheet
           </div>
         ) : null}
       </div>
-
-      {/* Input Form layout */}
-      <form onSubmit={onSend} className="chat-form" style={{ marginTop: "10px" }}>
-        <textarea
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          rows={2}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              onSend(e);
-            }
-          }}
-          placeholder="Ask your coach anything (e.g. 'Optimize my cardio zone 2 goals')..."
-        />
-        <button disabled={loading || !question.trim()} className="primary" type="submit">
-          {loading ? "Analyzing..." : "Send Prompt"}
-        </button>
-      </form>
-      
-      {error ? <div className="alert error" style={{ marginTop: "10px" }}>Error: {error}</div> : null}
     </div>
   );
 }
