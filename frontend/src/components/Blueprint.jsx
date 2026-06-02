@@ -542,7 +542,7 @@ export default function Blueprint() {
                   <td>5.5 km Base Run</td>
                   <td>8.5 km Long Run</td>
                   <td>14.0 km total</td>
-                  <td>Incorporate continuous Zone 2 heart rate tracking (<140 bpm)</td>
+                  <td>Incorporate continuous Zone 2 heart rate tracking (&lt;140 bpm)</td>
                 </tr>
                 <tr>
                   <td><b>Block 4 (Weeks 13-16)</b></td>
