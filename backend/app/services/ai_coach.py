@@ -3,14 +3,14 @@ from __future__ import annotations
 import datetime as dt
 from typing import Any, Dict, List, Optional
 
-from app.core.gemini_client import GeminiClient
+from app.core.ai_client import AIClient
 from app.core.config import Settings
 from app.services.sheets_repository import SheetsRepository, HEADERS
 
 
 def build_coach_prompt(*, question: str, user_config: Dict[str, str], context: Dict[str, Any]) -> str:
     """
-    We instruct Gemini to:
+    We instruct the AI coach to:
     1) Reply as your coach
     2) Optionally return structured sheet writes with updated meal plans / training plan JSON
     3) Keep medical safety in mind (no crash diets, recommend talking to a clinician for medical changes)
@@ -24,7 +24,7 @@ def build_coach_prompt(*, question: str, user_config: Dict[str, str], context: D
     health_notes = user_config.get("health_notes", "prediabetes (HbA1c ~6.0), slightly elevated blood sugar")
     timezone = user_config.get("timezone", "America/Toronto")
 
-    # Tabs/headers are controlled server-side, so Gemini only needs to produce values.
+    # Tabs/headers are controlled server-side; the model only needs to produce values.
     return f"""
 You are a certified strength coach + clinical nutritionist + hypertrophy specialist + endurance running coach.
 You coach an adult male with:
@@ -68,8 +68,7 @@ Timezone reference (if needed): {timezone}
 
 
 def coach_response_schema() -> dict:
-    # Subset of OpenAPI schema supported by Gemini structured output.
-    # We keep it simple to avoid schema incompatibilities.
+    # OpenAPI-compatible JSON schema for structured coach output.
     return {
         "type": "object",
         "properties": {
@@ -93,7 +92,7 @@ def coach_response_schema() -> dict:
 
 async def run_coach_chat(
     *,
-    gemini: GeminiClient,
+    ai: AIClient,
     repo: SheetsRepository,
     settings: Settings,
     question: str,
@@ -104,9 +103,9 @@ async def run_coach_chat(
     prompt = build_coach_prompt(question=question, user_config=config, context=context)
 
     schema = coach_response_schema()
-    response = await gemini.generate_json(prompt=prompt, response_schema=schema)
+    response = await ai.generate_json(prompt=prompt, response_schema=schema)
     if not isinstance(response, dict) or "reply" not in response:
-        raise RuntimeError("Gemini response did not match expected schema.")
+        raise RuntimeError("AI response did not match expected schema.")
     response.setdefault("writes", [])
     return response
 

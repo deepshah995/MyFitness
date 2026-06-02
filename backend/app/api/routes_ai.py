@@ -6,7 +6,7 @@ from typing import Any, Dict
 from fastapi import APIRouter, HTTPException
 
 from app.core.config import get_settings
-from app.core.gemini_client import build_gemini_client
+from app.core.ai_client import build_ai_client
 from app.models.schemas import AIChatRequest, AIChatResponse
 from app.services.ai_coach import apply_writes_if_allowed, run_coach_chat
 from app.services.sheets_repository import SheetsRepository
@@ -19,11 +19,11 @@ router = APIRouter()
 async def chat(req: AIChatRequest) -> AIChatResponse:
     settings = get_settings()
     sheets = SheetsRepository(settings=settings, sheets_client=build_sheets_client(settings))
-    gemini = build_gemini_client()
+    ai = build_ai_client()
 
     try:
         result = await run_coach_chat(
-            gemini=gemini,
+            ai=ai,
             repo=sheets,
             settings=settings,
             question=req.question,

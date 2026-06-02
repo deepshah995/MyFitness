@@ -11,9 +11,9 @@ class Settings(BaseSettings):
 
     port: int = 8080
 
-    # Gemini
-    gemini_api_key: str
-    gemini_model: str = "gemini-1.5-pro"
+    # OpenAI
+    openai_api_key: str
+    openai_model: str = "gpt-4o-mini"
 
     # Sheets
     spreadsheet_id: str
@@ -39,8 +39,3 @@ class Settings(BaseSettings):
 
 def get_settings() -> Settings:
     return Settings()
-
-
-def get_settings() -> Settings:
-    return Settings()
-

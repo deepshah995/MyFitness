@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException
 
 from app.core.config import get_settings
-from app.core.gemini_client import build_gemini_client  # noqa: F401 (kept for parity)
+from app.core.ai_client import build_ai_client  # noqa: F401 (kept for parity)
 from app.core.sheets_client import build_sheets_client
 from app.models.schemas import BodyStatCreate, JournalEntryCreate
 from app.services.sheets_repository import SheetsRepository
