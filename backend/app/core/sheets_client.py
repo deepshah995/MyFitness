@@ -14,18 +14,36 @@ SHEETS_SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
 class SheetsClient:
     def __init__(self, settings: Settings):
-        sa_info = settings.service_account_info()
-        if sa_info:
-            creds = service_account.Credentials.from_service_account_info(
-                sa_info, scopes=SHEETS_SCOPES
-            )
-        else:
-            # Fallback to Application Default Credentials (Cloud Run service account).
-            creds, _ = google.auth.default(scopes=SHEETS_SCOPES)
-        self.service = build("sheets", "v4", credentials=creds, cache_discovery=False)
         self.spreadsheet_id = settings.spreadsheet_id
+        self.service = None
+        
+        # Check if spreadsheet ID is provided
+        if not self.spreadsheet_id:
+            return
+
+        try:
+            sa_info = settings.service_account_info()
+            if sa_info:
+                creds = service_account.Credentials.from_service_account_info(
+                    sa_info, scopes=SHEETS_SCOPES
+                )
+            else:
+                # Fallback to Application Default Credentials (Cloud Run service account).
+                try:
+                    creds, _ = google.auth.default(scopes=SHEETS_SCOPES)
+                except Exception:
+                    # In local dev environment without credentials
+                    creds = None
+            
+            if creds:
+                self.service = build("sheets", "v4", credentials=creds, cache_discovery=False)
+        except Exception:
+            # Silence auth initialization failures so the app stays up.
+            self.service = None
 
     def get_values(self, *, range_name: str) -> List[List[str]]:
+        if not self.service or not self.spreadsheet_id:
+            return []
         try:
             resp = (
                 self.service.spreadsheets()
@@ -39,39 +57,49 @@ class SheetsClient:
             return []
 
     def append_row(self, *, sheet_name: str, values: List[Any]) -> None:
+        if not self.service or not self.spreadsheet_id:
+            return
         range_name = f"{sheet_name}!A1"
         body = {"values": [values]}
-        (
-            self.service.spreadsheets()
-            .values()
-            .append(
-                spreadsheetId=self.spreadsheet_id,
-                range=range_name,
-                valueInputOption="USER_ENTERED",
-                body=body,
-                insertDataOption="INSERT_ROWS",
+        try:
+            (
+                self.service.spreadsheets()
+                .values()
+                .append(
+                    spreadsheetId=self.spreadsheet_id,
+                    range=range_name,
+                    valueInputOption="USER_ENTERED",
+                    body=body,
+                    insertDataOption="INSERT_ROWS",
+                )
+                .execute()
             )
-            .execute()
-        )
+        except Exception:
+            pass
 
     def clear_and_write_row(self, *, sheet_name: str, header: List[str], row: List[Any]) -> None:
         """
         For MVP bootstrapping only. Assumes tab has the same header row shape.
         """
+        if not self.service or not self.spreadsheet_id:
+            return
         # Write header
-        self.service.spreadsheets().values().update(
-            spreadsheetId=self.spreadsheet_id,
-            range=f"{sheet_name}!A1",
-            valueInputOption="USER_ENTERED",
-            body={"values": [header]},
-        ).execute()
-        # Write row
-        self.service.spreadsheets().values().update(
-            spreadsheetId=self.spreadsheet_id,
-            range=f"{sheet_name}!A2",
-            valueInputOption="USER_ENTERED",
-            body={"values": [row]},
-        ).execute()
+        try:
+            self.service.spreadsheets().values().update(
+                spreadsheetId=self.spreadsheet_id,
+                range=f"{sheet_name}!A1",
+                valueInputOption="USER_ENTERED",
+                body={"values": [header]},
+            ).execute()
+            # Write row
+            self.service.spreadsheets().values().update(
+                spreadsheetId=self.spreadsheet_id,
+                range=f"{sheet_name}!A2",
+                valueInputOption="USER_ENTERED",
+                body={"values": [row]},
+            ).execute()
+        except Exception:
+            pass
 
 
 def build_sheets_client(settings: Settings) -> SheetsClient:

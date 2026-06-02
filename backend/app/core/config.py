@@ -12,11 +12,11 @@ class Settings(BaseSettings):
     port: int = 8080
 
     # Gemini
-    gemini_api_key: str
+    gemini_api_key: str = ""
     gemini_model: str = "gemini-1.5-pro"
 
     # Sheets
-    spreadsheet_id: str
+    spreadsheet_id: str = ""
     sheets_service_account_json_b64: str = Field(
         default="",
         validation_alias=AliasChoices("GOOGLE_SHEETS_SERVICE_ACCOUNT_JSON", "SHEETS_SERVICE_ACCOUNT_JSON_B64")
