@@ -114,20 +114,11 @@ const supplements = [
   { name: "Ashwagandha KSM-66", dose: "600 mg", timing: "Bedtime", why: "Cortisol suppression · prevents liver glucose dump · sleep quality", color: "#a78bfa" },
 ];
 
-const SERVICE_ACCOUNT = "250801762919-compute@developer.gserviceaccount.com";
-
 /* ─────────────── COMPONENT ─────────────── */
 export default function HelpGuide({ onSelectPrompt }) {
   const [activeSheetTab, setActiveSheetTab] = useState("config");
-  const [copied, setCopied] = useState(false);
   const [activePromptCat, setActivePromptCat] = useState(0);
   const [expandedPrompt, setExpandedPrompt] = useState(null);
-
-  function handleCopy() {
-    navigator.clipboard.writeText(SERVICE_ACCOUNT);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }
 
   const selectedSheet = sheetsMockData[activeSheetTab];
 
@@ -201,47 +192,6 @@ export default function HelpGuide({ onSelectPrompt }) {
         </div>
       </div>
 
-      {/* ─── SERVICE ACCOUNT CARD ─── */}
-      <div style={{
-        background: "rgba(52, 211, 153, 0.05)",
-        border: "1px solid rgba(52, 211, 153, 0.2)",
-        borderLeft: "4px solid #34d399",
-        borderRadius: "16px", padding: "20px 22px",
-      }}>
-        <div style={{ display: "flex", alignItems: "flex-start", gap: "14px", flexWrap: "wrap" }}>
-          <div style={{ flex: 1 }}>
-            <h3 style={{ margin: "0 0 6px", fontSize: "0.95rem", fontWeight: 700, color: "#34d399", display: "flex", alignItems: "center", gap: "8px" }}>
-              🔑 Backend Service Account Email
-            </h3>
-            <p style={{ margin: "0 0 14px", fontSize: "0.82rem", color: "var(--muted)", lineHeight: "1.5" }}>
-              Add this email as an <strong style={{ color: "var(--text)" }}>Editor</strong> in your Google Spreadsheet's Share settings.
-              Uncheck "Notify people" to avoid spam.
-            </p>
-            <div style={{
-              display: "flex", alignItems: "center", gap: "10px",
-              background: "rgba(0,0,0,0.3)", border: "1px solid rgba(52,211,153,0.2)",
-              borderRadius: "10px", padding: "10px 14px", flexWrap: "wrap",
-            }}>
-              <code style={{ flex: 1, fontSize: "0.82rem", color: "#6ee7b7", wordBreak: "break-all", fontFamily: "monospace" }}>
-                {SERVICE_ACCOUNT}
-              </code>
-              <button
-                type="button" onClick={handleCopy}
-                style={{
-                  padding: "7px 14px", fontSize: "0.78rem",
-                  background: copied ? "rgba(52,211,153,0.2)" : "rgba(52,211,153,0.1)",
-                  border: "1px solid rgba(52,211,153,0.3)", borderRadius: "8px",
-                  color: copied ? "#34d399" : "#6ee7b7",
-                  boxShadow: "none", flexShrink: 0,
-                  transition: "all 0.2s",
-                }}
-              >
-                {copied ? "✓ Copied!" : "📋 Copy"}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* ─── SHEET SCHEMA VISUALIZER ─── */}
       <div style={{
@@ -439,47 +389,6 @@ export default function HelpGuide({ onSelectPrompt }) {
         </div>
       </div>
 
-      {/* ─── ENV VARIABLE REFERENCE ─── */}
-      <div style={{
-        background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.06)",
-        borderRadius: "16px", padding: "20px 22px",
-      }}>
-        <h3 style={{ margin: "0 0 14px", fontSize: "0.92rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{
-            width: "22px", height: "22px", borderRadius: "6px",
-            background: "rgba(34,209,238,0.15)", border: "1px solid rgba(34,209,238,0.3)",
-            display: "inline-flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem",
-          }}>⚙</span>
-          Required Environment Variables
-        </h3>
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-          {[
-            { key: "OPENAI_API_KEY", val: "sk-proj-...", desc: "Your OpenAI API key (gpt-4o-mini by default)", color: "#34d399" },
-            { key: "SPREADSHEET_ID", val: "1_PbTHTq...", desc: "Google Sheets ID from the URL", color: "#a5b4fc" },
-            { key: "GOOGLE_SHEETS_SERVICE_ACCOUNT_JSON", val: "base64-encoded JSON", desc: "Service account credentials for Sheets sync", color: "#22d3ee" },
-            { key: "OPENAI_MODEL", val: "gpt-4o-mini", desc: "Optional · override with gpt-4o for best quality", color: "#fbbf24" },
-          ].map(v => (
-            <div key={v.key} style={{
-              display: "grid", gridTemplateColumns: "auto 1fr",
-              gap: "10px", alignItems: "start",
-              background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)",
-              borderRadius: "10px", padding: "10px 14px",
-            }}>
-              <code style={{
-                fontSize: "0.78rem", fontFamily: "monospace",
-                color: v.color, background: `${v.color}10`,
-                padding: "2px 8px", borderRadius: "6px", whiteSpace: "nowrap",
-              }}>
-                {v.key}
-              </code>
-              <div>
-                <div style={{ fontSize: "0.78rem", color: "var(--muted)", fontFamily: "monospace" }}>{v.val}</div>
-                <div style={{ fontSize: "0.75rem", color: "#64748b", marginTop: "2px" }}>{v.desc}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
 
     </div>
   );
