@@ -240,7 +240,7 @@ export default function LogForms() {
           <button type="submit">Save Body</button>
         </form>
 
-        <form onSubmit={submitRun} className="card card-accent-run" style={{ gridColumn: "1 / span 1" }}>
+        <form onSubmit={submitRun} className="card card-accent-run log-run-card">
           <h3>🏃 Run</h3>
           <Field label="Date">
             <input type="date" value={run.date} onChange={(e) => setRun({ ...run, date: e.target.value })} />
@@ -266,7 +266,7 @@ export default function LogForms() {
           <button type="submit">Save Run</button>
         </form>
 
-        <form onSubmit={submitStrengthSession} className="card card-accent-strength" style={{ gridColumn: "2 / span 1" }}>
+        <form onSubmit={submitStrengthSession} className="card card-accent-strength log-strength-card">
           <h3>💪 Strength session</h3>
           <Field label="Date">
             <input
@@ -307,7 +307,7 @@ export default function LogForms() {
           <button type="submit">Save Strength Session</button>
         </form>
 
-        <form onSubmit={submitStrengthExercise} className="card card-accent-strength" style={{ gridColumn: "1 / span 2" }}>
+        <form onSubmit={submitStrengthExercise} className="card card-accent-strength log-exercise-card">
           <h3>🏋️ Strength exercise</h3>
           <div className="grid cols-2">
             <Field label="Strength session entry_id">

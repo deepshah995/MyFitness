@@ -1014,3 +1014,19 @@ button.chip:hover {
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* ══════════════════════════════════════════════
+   DESKTOP/TABLET LOG FORMS GRID
+   Only apply grid column spans on wider viewports
+══════════════════════════════════════════════ */
+@media (min-width: 768px) {
+  .log-run-card {
+    grid-column: 1 / span 1;
+  }
+  .log-strength-card {
+    grid-column: 2 / span 1;
+  }
+  .log-exercise-card {
+    grid-column: 1 / span 2;
+  }
+}

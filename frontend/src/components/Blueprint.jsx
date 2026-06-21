@@ -581,7 +581,7 @@ export default function Blueprint() {
           {/* Weekly grid */}
           <div style={{
             display: "grid",
-            gridTemplateColumns: "repeat(7, 1fr)",
+            gridTemplateColumns: "repeat(7, minmax(120px, 1fr))",
             gap: "10px",
             overflowX: "auto",
             paddingBottom: "8px",
