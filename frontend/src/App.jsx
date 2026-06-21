@@ -5,6 +5,7 @@ import LogForms from "./components/LogForms.jsx";
 import Dashboard from "./components/Dashboard.jsx";
 import HelpGuide from "./components/HelpGuide.jsx";
 import Blueprint from "./components/Blueprint.jsx";
+import CreatorStudio from "./components/CreatorStudio.jsx";
 
 // ── Capacitor Native Plugin stubs ────────────────────────────────────
 // These are no-ops in the browser / PWA.
@@ -19,6 +20,7 @@ const tabs = [
   { id: "log",       label: "Log",       icon: "◆",  mobileLabel: "Log"     },
   { id: "blueprint", label: "Blueprint", icon: "❖",  mobileLabel: "Plan"    },
   { id: "dashboard", label: "Dashboard", icon: "▣",  mobileLabel: "Sync"    },
+  { id: "creator",   label: "Studio",    icon: "👑", mobileLabel: "Studio"  },
   { id: "help",      label: "Setup",     icon: "⚙",  mobileLabel: "Setup"   },
 ];
 
@@ -179,6 +181,10 @@ export default function App() {
 
         {active === "blueprint" ? (
           <Blueprint />
+        ) : null}
+
+        {active === "creator" ? (
+          <CreatorStudio />
         ) : null}
 
         {active === "help" ? (
