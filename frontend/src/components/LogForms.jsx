@@ -14,7 +14,7 @@ function Field({ label, children }) {
   );
 }
 
-export default function LogForms() {
+export default function LogForms({ user, onSaveSuccess }) {
   const [journal, setJournal] = useState({
     date: todayISO(),
     sleep_hours: "",
@@ -87,8 +87,13 @@ export default function LogForms() {
     e.preventDefault();
     setStatus("");
     try {
-      await apiFetch("/api/journal/entry", { method: "POST", body: parsedJournal });
+      const payload = {
+        ...parsedJournal,
+        client_id: user?.client_id || 1
+      };
+      await apiFetch("/api/journal/entry", { method: "POST", body: payload });
       setStatus("Journal saved.");
+      if (onSaveSuccess) onSaveSuccess();
     } catch (err) {
       console.error(err);
       setStatus(`❌ Error: ${err.message || "Failed to save journal."}`);
@@ -103,9 +108,11 @@ export default function LogForms() {
         ...body,
         weight_kg: Number(body.weight_kg),
         waist_cm: Number(body.waist_cm),
+        client_id: user?.client_id || 1
       };
       await apiFetch("/api/journal/body", { method: "POST", body: payload });
       setStatus("Body stat saved.");
+      if (onSaveSuccess) onSaveSuccess();
     } catch (err) {
       console.error(err);
       setStatus(`❌ Error: ${err.message || "Failed to save body stat."}`);
@@ -124,9 +131,11 @@ export default function LogForms() {
         rpe_1_10: run.rpe_1_10 === "" ? null : Number(run.rpe_1_10),
         zone: run.zone || null,
         notes: run.notes || null,
+        client_id: user?.client_id || 1
       };
       await apiFetch("/api/logs/run", { method: "POST", body: payload });
       setStatus("Run log saved.");
+      if (onSaveSuccess) onSaveSuccess();
     } catch (err) {
       console.error(err);
       setStatus(`❌ Error: ${err.message || "Failed to save run log."}`);
@@ -145,10 +154,12 @@ export default function LogForms() {
         rpe_1_10: strengthSession.rpe_1_10 === "" ? null : Number(strengthSession.rpe_1_10),
         session_type: strengthSession.session_type.trim(),
         notes: strengthSession.notes || null,
+        client_id: user?.client_id || 1
       };
       const res = await apiFetch("/api/logs/strength-session", { method: "POST", body: payload });
       setStrengthExercise((s) => ({ ...s, strength_session_entry_id: res.entry_id }));
       setStatus(`Strength session saved (entry_id: ${res.entry_id}). Now add exercises.`);
+      if (onSaveSuccess) onSaveSuccess();
     } catch (err) {
       console.error(err);
       setStatus(`❌ Error: ${err.message || "Failed to save strength session."}`);
@@ -168,9 +179,11 @@ export default function LogForms() {
         notes: strengthExercise.notes || null,
         strength_session_entry_id: strengthExercise.strength_session_entry_id,
         exercise_name: strengthExercise.exercise_name.trim(),
+        client_id: user?.client_id || 1
       };
       await apiFetch("/api/logs/strength-exercise", { method: "POST", body: payload });
       setStatus("Strength exercise saved.");
+      if (onSaveSuccess) onSaveSuccess();
     } catch (err) {
       console.error(err);
       setStatus(`❌ Error: ${err.message || "Failed to save strength exercise."}`);

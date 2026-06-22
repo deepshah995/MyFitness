@@ -1,74 +1,74 @@
 from __future__ import annotations
 
 import datetime as dt
+import json
 from typing import Any, Dict, List, Optional
 
 from app.core.ai_client import AIClient
 from app.core.config import Settings
-from app.services.sheets_repository import SheetsRepository, HEADERS
+from app.core.database import get_client, get_client_logs, add_client_log, update_client_plan
 
-
-def build_coach_prompt(*, question: str, user_config: Dict[str, str], context: Dict[str, Any]) -> str:
+def build_coach_prompt(*, question: str, client: Dict[str, Any], context: List[Dict[str, Any]]) -> str:
     """
-    We instruct the AI coach to:
-    1) Reply as your coach
-    2) Optionally return structured sheet writes with updated meal plans / training plan JSON
-    3) Keep medical safety in mind (no crash diets, recommend talking to a clinician for medical changes)
+    Instruct the AI coach to:
+    1) Reply as the client's coach with highly structured markdown formatting
+    2) Return structured writes for database logs and active client plan updates
+    3) Ensure client goals (diet, weight, programs) are supported
     """
-    # Keep the prompt bounded: context is already trimmed to last N records.
-    age = user_config.get("age", "31")
-    sex = user_config.get("sex", "male")
-    height_cm = user_config.get("height_cm", "173")
-    weight_kg = user_config.get("weight_kg", "75")
-    diet_type = user_config.get("diet_type", "eggetarian")
-    health_notes = user_config.get("health_notes", "prediabetes (HbA1c ~6.0), slightly elevated blood sugar")
-    timezone = user_config.get("timezone", "America/Toronto")
+    name = client.get("name", "Athlete")
+    goal = client.get("goal", "Recomp & Fitness")
+    diet = client.get("diet", "Standard")
+    weight = client.get("weight", "75 kg")
+    
+    # Format database logs context
+    context_str = ""
+    if context:
+        context_str = "\n".join([
+            f"- [{c['created_at']}] {c['log_type']}: {c['content']}"
+            for c in context[:10]
+        ])
 
-    # Tabs/headers are controlled server-side; the model only needs to produce values.
     return f"""
-You are a certified strength coach + clinical nutritionist + hypertrophy specialist + endurance running coach.
-You coach an adult male with:
-- Age: {age}
-- Sex: {sex}
-- Height (cm): {height_cm}
-- Weight (kg): {weight_kg}
-- Diet: {diet_type} (eggs allowed, no meat/fish)
-- Health condition: {health_notes}
-- Primary goals (in priority): 
-  1) Lose body fat while maintaining muscle
-  2) Build visible muscle (focus: biceps, triceps, forearms)
-  3) Improve insulin sensitivity / prevent progression to Type 2 diabetes
-  4) Run a 10K in 4 months
-  5) Improve strength, energy, recovery, athletic performance
+You are Arti, a certified strength coach + clinical nutritionist + hypertrophy specialist + endurance running coach.
+You coach client {name} who is currently configured with the following active parameters in the local database:
+- Target Weight/Status: {weight}
+- Diet Preference: {diet}
+- Stated Goals/Plan: {goal}
 
-Important safety rules:
-- This is not medical advice. For medical changes, consult a licensed clinician.
-- No crash diets. Avoid extreme caloric restriction.
-- For prediabetes: prioritize stable glucose (low glycemic load, fiber, protein at meals, and walking after meals).
-- If the user asks for something risky, refuse and provide safer alternatives.
+Formatting Guidelines:
+- Your response (`reply`) MUST be structured, organized, professional, and visually clear.
+- Use markdown sub-headers (`###`), bold targets, and bulleted or numbered lists.
+- Avoid big blocks of text. Keep paragraphs short and actionable.
+- Divide your coaching input into sections (e.g. 🏋️ **Training Modifications**, 🥗 **Dietary Adjustments**, 📝 **Summary & Guidance**).
+
+Database Write & MCP Tools Guidelines:
+- You have write-access tools to update the client's current plan parameters or log entries in the local database.
+- If the user (client or coach) asks to adjust their calorie goals, daily protein targets, diet preference, training focus, weight targets, status, or progress, you MUST log a write action target called "plan_update".
+- "plan_update" writes structure:
+  - "sheet_name": "plan_update"
+  - "headers": list containing any of ["goal", "diet", "weight", "status", "progress"]
+  - "values": list of corresponding updated string values.
+  Note: When updating the goal, specify it in the format: "Focus (Calories kcal, Protein protein_g)" (e.g. "Arm Hypertrophy (2300 kcal, 150g protein)" or "Cardio / Running (2500 kcal, 170g protein)").
+- For logging regular events like meals, exercises, or weight checks, return a write object specifying:
+  - "sheet_name": "meals", "workouts", or "weight"
+  - "headers": list of labels (e.g. ["calories", "protein", "note"] or ["distance", "rpe"])
+  - "values": matching value strings.
 
 User request:
 {question}
 
-Current context (recent logs / entries; may be empty):
-{context}
+Current context (recent logs / entries from SQLite database):
+{context_str}
 
-Your output MUST be valid JSON matching the schema you are given by the backend:
+Your output MUST be valid JSON matching this schema:
 - "reply": string coach response for the user
-- "writes": optional array of sheet write objects to be persisted to Google Sheets.
-  Each write object MUST include:
-  - "sheet_name"
-  - "headers" (array of column names in the same order as "values")
-  - "values" (array of cell values as strings; lengths must match headers)
+- "writes": optional array of database write action objects as described.
 
-If you decide no persistence is needed, return {{"reply": "...", "writes": []}}.
-Use concise but actionable guidance.
-Timezone reference (if needed): {timezone}
+If you decide no database update or plan change is needed, return {{"reply": "...", "writes": []}}.
 """.strip()
 
 
 def coach_response_schema() -> dict:
-    # OpenAPI-compatible JSON schema for structured coach output.
     return {
         "type": "object",
         "properties": {
@@ -93,14 +93,18 @@ def coach_response_schema() -> dict:
 async def run_coach_chat(
     *,
     ai: AIClient,
-    repo: SheetsRepository,
+    client_id: int,
     settings: Settings,
     question: str,
     mode: str,
 ) -> Dict[str, Any]:
-    config = repo.get_config()
-    context = repo.get_recent_context()
-    prompt = build_coach_prompt(question=question, user_config=config, context=context)
+    client = get_client(client_id)
+    if not client:
+        # Fallback to default mock profile values
+        client = {"name": "Athlete", "goal": "Fitness & Recomp", "diet": "Standard", "weight": "75 kg"}
+        
+    context = get_client_logs(client_id)
+    prompt = build_coach_prompt(question=question, client=client, context=context)
 
     schema = coach_response_schema()
     response = await ai.generate_json(prompt=prompt, response_schema=schema)
@@ -110,7 +114,7 @@ async def run_coach_chat(
     return response
 
 
-def apply_writes_if_allowed(*, repo: SheetsRepository, writes: List[Dict[str, Any]], mode: str) -> int:
+def apply_writes_if_allowed(*, client_id: int, writes: List[Dict[str, Any]]) -> int:
     if not writes:
         return 0
     applied = 0
@@ -118,14 +122,50 @@ def apply_writes_if_allowed(*, repo: SheetsRepository, writes: List[Dict[str, An
         sheet_name = w.get("sheet_name")
         headers = w.get("headers") or []
         values = w.get("values") or []
-        if not sheet_name or sheet_name not in HEADERS:
+        if not sheet_name or len(headers) != len(values):
             continue
-        if len(headers) != len(values):
+        
+        # Combine headers & values to map details
+        record = dict(zip(headers, values))
+        
+        if sheet_name == "plan_update":
+            client = get_client(client_id)
+            if client:
+                new_goal = record.get("goal") or client["goal"]
+                new_weight = record.get("weight") or client["weight"]
+                new_diet = record.get("diet") or client["diet"]
+                new_status = record.get("status") or client["status"]
+                new_progress = record.get("progress") or client["progress"]
+                
+                update_client_plan(
+                    client_id=client_id,
+                    goal=new_goal,
+                    weight=new_weight,
+                    diet=new_diet,
+                    status=new_status,
+                    progress=new_progress
+                )
+                
+                # Audit log in database
+                add_client_log(
+                    client_id=client_id,
+                    log_type="plan_change",
+                    content=f"Plan updated by AI: Goal: {new_goal}, Diet: {new_diet}, Weight: {new_weight}",
+                    meta=record
+                )
+                applied += 1
             continue
-        record: Dict[str, Any] = {}
-        for h, v in zip(headers, values):
-            record[h] = v
-        repo.append_raw_row(tab=sheet_name, record=record)
+            
+        content_str = ", ".join([f"{k}: {v}" for k, v in record.items()])
+        
+        # Determine log type classification
+        log_type = "food" if sheet_name in ["meals", "diet", "nutrition"] else "workout" if "workout" in sheet_name or "training" in sheet_name else "weight"
+        
+        add_client_log(
+            client_id=client_id,
+            log_type=log_type,
+            content=content_str,
+            meta=record
+        )
         applied += 1
     return applied
-

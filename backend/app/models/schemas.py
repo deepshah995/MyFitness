@@ -9,6 +9,7 @@ class AIChatRequest(BaseModel):
     question: str = Field(..., min_length=1, max_length=4000)
     mode: Literal["training", "diet", "supplements", "journal", "general"] = "general"
     apply_updates: bool = True
+    client_id: Optional[int] = 1
 
 
 class AIChatResponse(BaseModel):
@@ -28,6 +29,7 @@ class JournalEntryCreate(BaseModel):
     post_meal_glucose_mg_dl: Optional[float] = None
     hbA1c_percent: Optional[float] = None
     notes: Optional[str] = None
+    client_id: Optional[int] = 1
 
 
 class BodyStatCreate(BaseModel):
@@ -35,6 +37,7 @@ class BodyStatCreate(BaseModel):
     weight_kg: float
     waist_cm: float
     notes: Optional[str] = None
+    client_id: Optional[int] = 1
 
 
 class RunLogCreate(BaseModel):
@@ -45,6 +48,7 @@ class RunLogCreate(BaseModel):
     rpe_1_10: Optional[float] = None
     zone: Optional[str] = None
     notes: Optional[str] = None
+    client_id: Optional[int] = 1
 
 
 class StrengthSessionCreate(BaseModel):
@@ -54,6 +58,7 @@ class StrengthSessionCreate(BaseModel):
     total_volume_score: Optional[float] = None
     rpe_1_10: Optional[float] = None
     notes: Optional[str] = None
+    client_id: Optional[int] = 1
 
 
 class StrengthExerciseCreate(BaseModel):
@@ -64,4 +69,5 @@ class StrengthExerciseCreate(BaseModel):
     weight_kg: Optional[float] = None
     rpe_1_10: Optional[float] = None
     notes: Optional[str] = None
+    client_id: Optional[int] = 1
 

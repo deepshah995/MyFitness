@@ -1,4 +1,5 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { apiFetch } from "../api.js";
 
 /* ─────────────────────────── PROFILE ─────────────────────────── */
 const PROFILE = {
@@ -493,12 +494,61 @@ const THEME_COLOR = {
 };
 
 /* ──────────────────── COMPONENT ──────────────────────── */
-export default function Blueprint() {
+export default function Blueprint({ user }) {
   const [view, setView] = useState("week");   // "week" | "day"
   const [selectedDay, setSelectedDay] = useState(0);
   const [expandedBlocks, setExpandedBlocks] = useState({});
   const calendarRef = useRef(null);
   const touchStartX = useRef(null);
+
+  const [clientInfo, setClientInfo] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (user?.client_id) {
+      setLoading(true);
+      apiFetch(`/api/db/clients/${user.client_id}`)
+        .then(data => {
+          setClientInfo(data);
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error("Failed to fetch client blueprint details", err);
+          setLoading(false);
+        });
+    }
+  }, [user?.client_id]);
+
+  // Parse calories & protein from clientInfo.goal if available (e.g. "Recomp (2200 kcal, 140g protein)")
+  let displayCalories = PROFILE.calories;
+  let displayProtein = PROFILE.protein;
+  let displayFocus = "Metabolic Recomposition Blueprint";
+  
+  if (clientInfo?.goal) {
+    const calMatch = clientInfo.goal.match(/(\d+)\s*kcal/i) || clientInfo.goal.match(/(\d+)\s*calories/i) || clientInfo.goal.match(/(\d+)\s*cal/i);
+    const protMatch = clientInfo.goal.match(/(\d+)\s*g\s*protein/i) || clientInfo.goal.match(/(\d+)\s*protein/i) || clientInfo.goal.match(/(\d+)\s*g/i);
+    if (calMatch) displayCalories = parseInt(calMatch[1]);
+    if (protMatch) displayProtein = parseInt(protMatch[1]);
+    
+    // Extract focus
+    const focusParts = clientInfo.goal.split("(");
+    if (focusParts.length > 0 && focusParts[0].trim()) {
+      displayFocus = focusParts[0].trim() + " Plan";
+    }
+  }
+
+  const displayWeight = clientInfo?.weight || `${PROFILE.weight} kg`;
+  const displayDiet = clientInfo?.diet || PROFILE.diet;
+  const displayStatus = clientInfo?.status || "Active Plan";
+  const displayProgress = clientInfo?.progress || "Week 1 / 16";
+  
+  const displayFat = Math.round((displayCalories * 0.25) / 9);
+  const displayCarbs = Math.max(0, Math.round((displayCalories - (displayProtein * 4) - (displayFat * 9)) / 4));
+  
+  let numericWeight = 75.5;
+  const weightMatch = displayWeight.match(/([0-9.]+)/);
+  if (weightMatch) numericWeight = parseFloat(weightMatch[1]);
+  const displayBMI = (numericWeight / (1.73 * 1.73)).toFixed(1);
 
   const day = WEEK[selectedDay];
 
@@ -522,9 +572,9 @@ export default function Blueprint() {
       {/* ─── HEADER ─── */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "20px", flexWrap: "wrap", gap: "12px" }}>
         <div>
-          <h2 className="title" style={{ margin: 0 }}>Metabolic Recomposition Blueprint</h2>
+          <h2 className="title" style={{ margin: 0 }}>{displayFocus}</h2>
           <p className="muted" style={{ margin: "4px 0 0" }}>
-            16-Week · Arm Hypertrophy + 10K + Insulin Remission · {PROFILE.weight} kg / {PROFILE.height} cm · BMI {PROFILE.bmi}
+            {displayProgress} · Status: <strong>{displayStatus}</strong> · {displayWeight} · Height: {PROFILE.height} cm · BMI {displayBMI} · Diet: {displayDiet}
           </p>
         </div>
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
@@ -558,12 +608,12 @@ export default function Blueprint() {
       {/* ─── MACRO STRIP ─── */}
       <div style={{ display: "flex", gap: "10px", marginBottom: "20px", flexWrap: "wrap" }}>
         {[
-          { label: "Daily Calories", val: `${PROFILE.calories} kcal`, color: "#a5b4fc" },
-          { label: "Protein Target", val: `${PROFILE.protein}g`, color: "#34d399" },
-          { label: "Carbs Max", val: `${PROFILE.carbs}g`, color: "#fbbf24" },
-          { label: "Fat Target", val: `${PROFILE.fat}g`, color: "#f472b6" },
-          { label: "Body Weight", val: `${PROFILE.weight} kg`, color: "#22d3ee" },
-          { label: "BMI", val: PROFILE.bmi, color: "#a78bfa" },
+          { label: "Daily Calories", val: `${displayCalories} kcal`, color: "#a5b4fc" },
+          { label: "Protein Target", val: `${displayProtein}g`, color: "#34d399" },
+          { label: "Carbs Max", val: `${displayCarbs}g`, color: "#fbbf24" },
+          { label: "Fat Target", val: `${displayFat}g`, color: "#f472b6" },
+          { label: "Body Weight", val: displayWeight, color: "#22d3ee" },
+          { label: "BMI", val: displayBMI, color: "#a78bfa" },
         ].map(m => (
           <div key={m.label} style={{
             flex: "1 1 140px", background: "rgba(255,255,255,0.025)", border: `1px solid ${m.color}30`,

@@ -1,47 +1,56 @@
 from __future__ import annotations
 
 from fastapi import APIRouter
-
-from app.core.config import get_settings
-from app.core.sheets_client import build_sheets_client
-from app.services.sheets_repository import SheetsRepository
+from app.core.database import get_client, get_client_logs
 
 router = APIRouter()
 
-
 @router.get("/dashboard/overview")
 async def overview():
-    settings = get_settings()
     status = {
+        "db_connected": True,
         "sheets_configured": False,
         "postgres_configured": False,
-        "active_mode": "sheets"
+        "active_mode": "sqlite"
     }
     
     try:
-        sheets_client = build_sheets_client(settings)
-        if sheets_client.service and settings.spreadsheet_id:
-            status["sheets_configured"] = True
-            
-        repo = SheetsRepository(settings=settings, sheets_client=sheets_client)
+        # Fetch default profile & logs context from SQLite
+        client = get_client(1) or {
+            "name": "Jane Doe",
+            "goal": "10K Run & Recomp",
+            "weight": "68.2 kg",
+            "diet": "Standard",
+            "status": "Active Plan",
+            "progress": "Week 4 / 16"
+        }
         
-        if not status["sheets_configured"]:
-            return {
-                "status": status,
-                "config": {},
-                "recent": {
-                    "journal_entries": [],
-                    "body_stats": [],
-                    "run_logs": [],
-                    "strength_sessions": []
-                },
-                "error": "Sheets client service failed to initialize. Please check Google Cloud credentials."
-            }
-            
+        logs = get_client_logs(1)
+        
+        # Segment logs to match the expected frontend dashboard structure
+        recent = {
+            "journal_entries": [
+                {"date": l["created_at"][:10], "notes": l["content"]} 
+                for l in logs if l["log_type"] == "journal"
+            ],
+            "body_stats": [
+                {"date": l["created_at"][:10], "weight_kg": l["content"]} 
+                for l in logs if l["log_type"] == "weight"
+            ],
+            "run_logs": [
+                {"date": l["created_at"][:10], "notes": l["content"]} 
+                for l in logs if l["log_type"] == "workout" and "Run" in l["content"]
+            ],
+            "strength_sessions": [
+                {"date": l["created_at"][:10], "notes": l["content"]} 
+                for l in logs if l["log_type"] == "workout" and "Strength" in l["content"]
+            ]
+        }
+        
         return {
             "status": status,
-            "config": repo.get_config(),
-            "recent": repo.get_recent_context(days=14),
+            "config": client,
+            "recent": recent,
         }
     except Exception as e:
         return {
@@ -53,5 +62,5 @@ async def overview():
                 "run_logs": [],
                 "strength_sessions": []
             },
-            "error": f"Failed to connect to database: {e}"
+            "error": f"Failed to retrieve SQLite database context: {e}"
         }

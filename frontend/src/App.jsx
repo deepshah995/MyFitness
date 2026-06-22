@@ -6,14 +6,35 @@ import Dashboard from "./components/Dashboard.jsx";
 import HelpGuide from "./components/HelpGuide.jsx";
 import Blueprint from "./components/Blueprint.jsx";
 import CreatorStudio from "./components/CreatorStudio.jsx";
+import AgencyDashboard from "./components/AgencyDashboard.jsx";
+import AuthScreen from "./components/AuthScreen.jsx";
 
 // ── Capacitor Native Plugin stubs ────────────────────────────────────
-// These are no-ops in the browser / PWA.
-// When @capacitor/* packages are installed (native build), swap these
-// back to dynamic imports: await import("@capacitor/status-bar") etc.
 async function initNativePlugins() { /* no-op in PWA/browser */ }
 async function hapticTap() { /* no-op in PWA/browser */ }
 
+const PRESETS = [
+  { name: "Cyber Neon", primary: "#6366f1", secondary: "#22d3ee", theme: "cyber" },
+  { name: "Sunset Gold", primary: "#f59e0b", secondary: "#ec4899", theme: "sunset" },
+  { name: "Forest Aura", primary: "#10b981", secondary: "#3b82f6", theme: "forest" },
+  { name: "Electric Crimson", primary: "#f43f5e", secondary: "#8b5cf6", theme: "crimson" },
+  { name: "Hypertrophy Orange", primary: "#f97316", secondary: "#ef4444", theme: "hypertrophy" },
+  { name: "CrossFit Red", primary: "#dc2626", secondary: "#111827", theme: "crossfit" },
+  { name: "Pilates Mint", primary: "#2dd4bf", secondary: "#34d399", theme: "pilates" },
+  { name: "Endurance Blue", primary: "#3b82f6", secondary: "#8b5cf6", theme: "endurance" },
+];
+
+function applyBrandingColors(branding) {
+  if (!branding) return;
+  if (branding.preset_theme === "custom" && branding.custom_primary) {
+    document.documentElement.style.setProperty("--primary", branding.custom_primary);
+    document.documentElement.style.setProperty("--secondary", branding.custom_secondary || branding.custom_primary);
+  } else {
+    const preset = PRESETS.find(p => p.theme === branding.preset_theme) || PRESETS[0];
+    document.documentElement.style.setProperty("--primary", preset.primary);
+    document.documentElement.style.setProperty("--secondary", preset.secondary);
+  }
+}
 
 const tabs = [
   { id: "coach",     label: "Coach",     icon: "✦",  mobileLabel: "Coach"   },
@@ -21,6 +42,7 @@ const tabs = [
   { id: "blueprint", label: "Blueprint", icon: "❖",  mobileLabel: "Plan"    },
   { id: "dashboard", label: "Dashboard", icon: "▣",  mobileLabel: "Sync"    },
   { id: "creator",   label: "Studio",    icon: "👑", mobileLabel: "Studio"  },
+  { id: "agency",    label: "Agency",    icon: "🏢", mobileLabel: "Agency"  },
   { id: "help",      label: "Setup",     icon: "⚙",  mobileLabel: "Setup"   },
 ];
 
@@ -37,6 +59,7 @@ function useIsMobile() {
 }
 
 export default function App() {
+  const [user, setUser] = useState(null);
   const [active, setActive] = useState("coach");
   const [preloadedPrompt, setPreloadedPrompt] = useState("");
   const isMobile = useIsMobile();
@@ -71,51 +94,118 @@ export default function App() {
   }
 
   useEffect(() => {
+    const savedUser = localStorage.getItem("fitness_user");
+    if (savedUser) {
+      const parsed = JSON.parse(savedUser);
+      setUser(parsed);
+      applyBrandingColors(parsed.branding);
+    }
     fetchStatus();
-    // Fire native plugin setup (no-op in browser)
     initNativePlugins();
   }, []);
+
+  function handleLoginSuccess(userData) {
+    setUser(userData);
+    localStorage.setItem("fitness_user", JSON.stringify(userData));
+    applyBrandingColors(userData.branding);
+  }
+
+  function handleLogout() {
+    setUser(null);
+    localStorage.removeItem("fitness_user");
+    document.documentElement.style.setProperty("--primary", "#6366f1");
+    document.documentElement.style.setProperty("--secondary", "#22d3ee");
+  }
 
   function handleSelectPrompt(prompt) {
     setPreloadedPrompt(prompt);
     setActive("coach");
   }
 
-  // Live Sync Badge Rendering
-  const isConnected = systemStatus.sheets_configured && !error;
+  // Database Connection Badge Rendering
+  const isDbConnected = systemStatus.db_connected && !error;
+
+  // Filter tabs by user role to enforce space personalization & isolation
+  const visibleTabs = tabs.filter((t) => {
+    if (t.id === "creator") {
+      return user && (user.role === "coach" || user.role === "agency");
+    }
+    if (t.id === "agency") {
+      return user && user.role === "agency";
+    }
+    return true; // Everyone sees coach, log, blueprint, dashboard, setup
+  });
+
+  // Intercept layout if not logged in
+  if (!user) {
+    return <AuthScreen onLoginSuccess={handleLoginSuccess} />;
+  }
+
+  const brandTitle = user?.branding?.brand_name || "MyFitness AI";
+  const logoUrl = user?.branding?.logo_url || "👑";
 
   return (
     <div className="app-shell">
 
       {/* ── HEADER ────────────────────────────────────────── */}
       <div className="hero">
-        <div className="hero-text-block">
-          {/* Desktop badge - hidden on mobile via CSS */}
-          {!isMobile && (
-            <div className="hero-badge hero-desktop-badge">
-              <span style={{ marginRight: "10px" }}>✦ AI Training System</span>
-              <span>❖ GCP Cloud Run</span>
-            </div>
-          )}
-          <h1>MyFitness AI{isMobile ? "" : " Coach"}</h1>
-          {!isMobile && (
-            <p style={{ marginTop: "10px" }}>
-              Track progress, log workouts, and get smart, personalized guidance for recomp, arms, and your 10K goal.
-            </p>
-          )}
+        <div className="hero-text-block" style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+          {/* Logo element: text/emoji or image */}
+          <div className="app-logo-wrap" style={{ fontSize: "2.4rem", display: "flex", alignItems: "center" }}>
+            {logoUrl.startsWith("data:image") ? (
+              <img src={logoUrl} alt="Logo" style={{ height: "48px", width: "48px", borderRadius: "8px", objectFit: "cover" }} />
+            ) : (
+              <span>{logoUrl}</span>
+            )}
+          </div>
+          <div>
+            {/* Desktop badge */}
+            {!isMobile && (
+              <div className="hero-badge hero-desktop-badge">
+                <span style={{ marginRight: "10px" }}>✦ AI Training System</span>
+                <span style={{ textTransform: "uppercase" }}>❖ Role: {user.role}</span>
+              </div>
+            )}
+            <h1>{brandTitle}</h1>
+            {!isMobile && (
+              <p style={{ marginTop: "6px", fontSize: "0.88rem" }}>
+                Welcome back, <strong>{user.email}</strong>. Track progress, logs, and get smart guidance from your custom AI coach, Arti.
+              </p>
+            )}
+          </div>
         </div>
 
-        {/* Live sync card */}
-        <div className="connection-status-card">
-          <div className={`status-indicator ${isConnected ? "active" : "warning"}`} />
-          <div className="status-details">
-            <span className="status-title">
-              {isConnected ? "Sheets Connected" : "Offline Mode"}
-            </span>
-            <span className="status-subtitle">
-              {isConnected ? "Auto-syncing to Drive" : "Config required"}
-            </span>
+        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+          {/* DB connection status card */}
+          <div className="connection-status-card">
+            <div className={`status-indicator ${isDbConnected ? "active" : "warning"}`} />
+            <div className="status-details">
+              <span className="status-title">
+                {isDbConnected ? "Database Active" : "Local Sync"}
+              </span>
+              <span className="status-subtitle">
+                {isDbConnected ? "SQLite Engine Online" : "SQLite Stalled"}
+              </span>
+            </div>
           </div>
+
+          <button 
+            type="button" 
+            className="secondary" 
+            onClick={handleLogout}
+            style={{ 
+              padding: "8px 16px", 
+              fontSize: "0.8rem", 
+              borderRadius: "999px", 
+              background: "rgba(244, 63, 94, 0.12)", 
+              border: "1px solid rgba(244, 63, 94, 0.25)", 
+              color: "#f43f5e",
+              cursor: "pointer",
+              boxShadow: "none"
+            }}
+          >
+            Logout
+          </button>
         </div>
       </div>
 
@@ -126,7 +216,7 @@ export default function App() {
           style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%", flexWrap: "wrap", gap: "10px" }}
         >
           <div style={{ display: "flex", gap: "6px" }}>
-            {tabs.map((t) => (
+            {visibleTabs.map((t) => (
               <button
                 key={t.id}
                 type="button"
@@ -139,14 +229,14 @@ export default function App() {
             ))}
           </div>
 
-          {!isConnected && active !== "help" ? (
+          {active !== "help" ? (
             <button
               type="button"
               className="secondary"
               style={{ fontSize: "0.8rem", padding: "8px 16px", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "999px", boxShadow: "none" }}
               onClick={() => setActive("help")}
             >
-              ⚙ View Setup Guide
+              ⚙ View Help Guide
             </button>
           ) : null}
         </div>
@@ -156,21 +246,22 @@ export default function App() {
       <div className="panel">
         {active === "coach" ? (
           <CoachChat
+            user={user}
             preloadedPrompt={preloadedPrompt}
             clearPreloadedPrompt={() => setPreloadedPrompt("")}
-            sheetsConnected={isConnected}
           />
         ) : null}
 
         {active === "log" ? (
           <LogForms
+            user={user}
             onSaveSuccess={fetchStatus}
-            sheetsConnected={isConnected}
           />
         ) : null}
 
         {active === "dashboard" ? (
           <Dashboard
+            user={user}
             dashboardData={dashboardData}
             loading={loading}
             error={error}
@@ -180,11 +271,15 @@ export default function App() {
         ) : null}
 
         {active === "blueprint" ? (
-          <Blueprint />
+          <Blueprint user={user} />
         ) : null}
 
         {active === "creator" ? (
-          <CreatorStudio />
+          <CreatorStudio user={user} />
+        ) : null}
+
+        {active === "agency" ? (
+          <AgencyDashboard />
         ) : null}
 
         {active === "help" ? (
@@ -196,7 +291,7 @@ export default function App() {
 
       {/* ── BOTTOM NAVIGATION BAR (mobile only) ────────────── */}
       <nav className="bottom-nav" aria-label="Main navigation">
-        {tabs.map((t) => (
+        {visibleTabs.map((t) => (
           <button
             key={t.id}
             type="button"
